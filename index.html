@@ -31,6 +31,7 @@
         #debug { position:absolute; bottom:10px; left:0; right:0; width:100%; text-align:center; }
         .maplibregl-ctrl, .highcharts-credits { display:none !important; }
         .marker_car { background:url("./car.png") no-repeat 50% 100%; background-size:contain; width:64px; height:64px; }
+        .marker_arrow { background:url("./arrow.png") no-repeat 50% 100%; background-size:contain; width:64px; height:64px; }
         #form { background-color:rgba(0,0,0,0.8); border-radius:5px; margin:10px auto; width:auto; left:10px; right:10px;}
         #form a { color:#DDF; display:block; text-align:left; text-decoration:none; margin: 0.2em; width: 100%; }
         input { font:mono; border-radius:1em; padding: 0.5em; border: 2px solid #888; background: #EEE; margin:2px auto; display:block; box-sizing:border-box; width:100%;  }
@@ -126,6 +127,7 @@ class Tracer {
             if (timeIncMs > 0) {
                 this.variance += coeffVariance;
                 this.altitudeVariance += coeffVariance;
+                this.smoothPosition.timestamp = position.timestamp;
             }
 
             const deltaVariance = this.variance / (this.variance + (accuracy*accuracy));
@@ -230,8 +232,8 @@ class CarData {
         };
 
         this.vector = {
-            heading: heading,
-            speed: speed,
+            heading: 0+ heading,
+            speed: 0+ speed,
             timestamp: now,
         };
     }
@@ -253,29 +255,43 @@ class CarData {
         return this.getPosition2dAsArray().concat([this.position.altitude]);
     }
 
-    getVirtualPosition() {
+    getVirtualClone() {
         const earthRadiusInM = 6372795.477598;
+        const deg2rad = deg => Math.PI * deg / 180;
+        const rad2deg = rad => 180 * rad / Math.PI;
         const now = Date.now();
         const dtime = now - this.position.timestamp;
-        const distanceInM = (this.vector.speed + (this.dvector.speed*dtime/1000))* this.dvector.timestamp /1000;
-        const headingInRad = Math.PI * (this.vector.heading + (this.dvector.heading*dtime/1000)) /180;
+        const speed = this.vector.speed + (this.dvector.speed*dtime/1000);
+        const distanceInM = speed * this.dvector.timestamp /1000;
+        const heading = this.vector.heading + (this.dvector.heading*dtime/1000);
+        const headingInRad = deg2rad(heading);
         const ratio = distanceInM / earthRadiusInM;
+        const lngInRad = deg2rad(this.position.longitude);
+        const latInRad = deg2rad(this.position.latitude);
 
-        const nextLatitude = Math.asin( 
-            (Math.sin(this.position.latitude)*Math.cos(ratio)) +
-            (Math.cos(this.position.latitude)*Math.sin(ratio)*Math.cos(headingInRad))
+        const nextLatInRad = Math.asin( 
+            (Math.sin(latInRad)*Math.cos(ratio)) +
+            (Math.cos(latInRad)*Math.sin(ratio)*Math.cos(headingInRad))
         );
-        const nextLongitude = this.position.longitude + 
+        
+        const nextLngInRad = lngInRad + 
             Math.atan2(
-                Math.sin(headingInRad)*Math.sin(ratio)*Math.cos(this.position.latitude),
-                Math.cos(ratio) - (Math.sin(this.position.latitude)*Math.sin(nextLatitude))
+                Math.sin(headingInRad)*Math.sin(ratio)*Math.cos(latInRad),
+                Math.cos(ratio) - (Math.sin(latInRad)*Math.sin(nextLatInRad))
             )
         ;
 
         return {
-            longitude: nextLongitude,
-            latitude:  nextLatitude,
-            timestamp: now,
+            vector: {
+                heading: heading,
+                speed: speed,
+                timestamp: now,
+            },
+            position: {
+                longitude: rad2deg(nextLngInRad),
+                latitude:  rad2deg(nextLatInRad),
+                timestamp: now,
+            }
         }
     }
 
@@ -411,7 +427,8 @@ function initMap() {
     });
 
     let html_car = document.createElement('div');
-    html_car.className = 'marker_car';
+    //html_car.className = 'marker_car';
+    html_car.className = 'marker_arrow';
 
     cardata.marker = new maplibregl.Marker(html_car)
         .setLngLat([-1.5115, 48.6345])
@@ -544,8 +561,8 @@ function initMap() {
 
 function moveDrone(position) {
     if (map.loaded() && map.getSource('drone') != null) {
-        const angle = document.body.dataset.pov=="3d" ? 0 : cardata.vector.heading * (180 / Math.PI)
-        map.setLayoutProperty('drone', 'icon-rotate', angle);
+        //const angle = document.body.dataset.pov=="3d" ? 0 : cardata.vector.heading * (180 / Math.PI);
+        //map.setLayoutProperty('drone', 'icon-rotate', angle);
         map.getSource('drone').setData({
             "type": "Point",
             "coordinates": position,
@@ -556,27 +573,28 @@ function moveDrone(position) {
 
 function animate(timestamp) {
     const now = Date.now();
-    const virtualPosition = cardata.getVirtualPosition();
-    let position2d = [ virtualPosition.longitude, virtualPosition.latitude ];
+    const vcardata = cardata.getVirtualClone();
+    let position2d = [ vcardata.position.longitude, vcardata.position.latitude ];
 
-    /*
     if (cardata.marker) {
         if (now - cardata.position.timestamp < cardata.dvector.timestamp) {
             const ratio = (now - cardata.position.timestamp) / cardata.dvector.timestamp;
             const markerPosition = cardata.marker.getLngLat();
 
-            const dLng = (virtualPosition.longitude-markerPosition.lng) *ratio;
-            const dLat = (virtualPosition.latitude -markerPosition.lat) *ratio;
+            const dLng = (vcardata.position.longitude-markerPosition.lng) *ratio;
+            const dLat = (vcardata.position.latitude -markerPosition.lat) *ratio;
 
             position2d = [ markerPosition.lng+dLng, markerPosition.lat+dLat ];
 
-            console.log(virtualPosition, markerPosition, ratio);
         }
-        console.log(virtualPosition);
 
-        cardata.marker.setLngLat(position2d);
+        const angle = document.body.dataset.pov=="3d" ? 0 : vcardata.vector.heading * (180 / Math.PI);
+        
+        cardata.marker
+            .setLngLat(position2d)
+            .setRotation(angle)
+        ;
     }
-    */
 
     if (map.loaded() && !map.isMoving() && !map.isRotating()) {
         switch(document.body.dataset.pov) {
@@ -616,7 +634,7 @@ function animate(timestamp) {
 
     // TODO reload if heading +/- 90
 
-    //animationId = window.requestAnimationFrame(animate);
+    animationId = window.requestAnimationFrame(animate);
 }
 
 window.addEventListener("load", () => {
