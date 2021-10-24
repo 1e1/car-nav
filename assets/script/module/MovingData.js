@@ -91,7 +91,7 @@ class MovingData {
                 latitude:  rad2deg(nextLatInRad),
                 timestamp: now,
             }
-        }
+        };
     }
 
     resetTrip() {
@@ -120,7 +120,7 @@ class MovingData {
     }
 
     getTripEtaInDate() {
-        return (this.trip != null) ? new Date(this.trip.durartion + this.trip.timestamp) : Date.now();
+        return (this.trip == null) ? new Date() : new Date(this.trip.duration + this.trip.timestamp);
     }
 }
 
