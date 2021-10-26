@@ -19,15 +19,16 @@
     <div id="speedBoard" class="front">
         <div class="board">
             <div id="speedLimit"></div>
-            <div id="speed">0</div>
+            <div id="speed" class="carViewOnly">0</div>
         </div>
     </div>
 
+    <div id="eta"></div>
+
     <div id="commands">
-        <button name="changeViewMapCar3d">🚗</button><!-- 📍 -->
-        <button name="changeViewMapFree2d">🗺</button>
+        <button name="changeViewMapCar3d" class="freeViewOnly">🚗</button><!-- 📍 -->
+        <button name="changeViewMapFree2d" class="carViewOnly">🗺</button>
         <button name="search" onclick="document.getElementById('form').style.display='block';">🏁</button>
-        <button name="reload">🔄</button>
     </div>
 
     <div id="form" class="panel" style="display:none">

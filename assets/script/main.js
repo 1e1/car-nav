@@ -9,6 +9,7 @@ import { Tracer } from './module/Tracer.js';
 var html_speedLimit = document.getElementById("speedLimit");
 var html_speed      = document.getElementById("speed");
 var html_address    = document.getElementById("address");
+var html_eta        = document.getElementById("eta");
 
 var cardata = new MovingData();
 var step    = Stalker.fromFrance({type:"notime"});
@@ -73,6 +74,7 @@ function startRoute(longitude, latitude) {
 }
 
 function reloadRoute() {
+    router.reset();
     router.goto();
 }
 
@@ -102,12 +104,21 @@ function drawRoute(geometry, duration, distance) {
             'paint': {
                 'line-color': '#17ea3d',
                 'line-width': 8,
-                'line-opacity': 0.75,
+                'line-opacity': 0.66,
             }
         });
     }
 
     cardata.setTripInfo(duration*1000, distance);
+}
+
+function undrawRoute() {
+    if (map.getSource('route')) {
+        if (map.getLayer('route')) {
+            map.removeLayer('route');
+        }
+        map.removeSource('route');
+    }
 }
 
 function initMap() {
@@ -227,8 +238,8 @@ function initMap() {
             },
         });
         */
-        document.getElementById('map').style.opacity = 1;
         changeViewMap("car", "3d");
+        document.getElementById('map').style.opacity = 1;
     });
 
     //map.addControl(new maplibregl.NavigationControl({ position: "top-left" }));
@@ -261,6 +272,12 @@ function animate(timestamp) {
         let position2d = [ vcardata.position.longitude, vcardata.position.latitude ];
 
         if (cardata.marker) {
+            const markerLngLat = cardata.marker.getLngLat();
+
+            if (isNaN(markerLngLat[0] || isNaN(markerLngLat[1]))) {
+                console.warn(cardata.marker, markerLngLat);
+            }
+
             if (now - cardata.position.timestamp < cardata.dvector.timestamp) {
                 const ratio = (now - cardata.position.timestamp) / cardata.dvector.timestamp;
                 const markerPosition = cardata.marker.getLngLat();
@@ -273,6 +290,10 @@ function animate(timestamp) {
 
             const angle = is3dMap() ? 0 : vcardata.vector.heading * (180 / Math.PI);
             
+            if (isNaN(position2d[0] || isNaN(position2d[1]))) {
+                console.warn(position2d, cardata, vcardata);
+            }
+
             cardata.marker
                 .setLngLat(position2d)
                 .setRotation(angle)
@@ -323,7 +344,28 @@ function animate(timestamp) {
     // refresh Duration
     // refresh Distance
 
-    // TODO reload if heading +/- 90
+    const eta = cardata.trip == null 
+        ? ''
+        : '⏱' + cardata.getTripEtaInDate().toLocaleTimeString('fr-FR', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+    ;
+
+    if (html_eta.innerHTML != eta) {
+        html_eta.innerHTML = eta;
+    }
+
+    try {
+        router.set(cardata.position.longitude, cardata.position.latitude);
+        if (router.route == null) {
+            undrawRoute();
+        }
+    } catch(error) {
+        console.warn(error, "reloadRoute()");
+        reloadRoute();
+    }
 
     animationId = window.requestAnimationFrame(animate);
 }
@@ -339,7 +381,8 @@ window.addEventListener("load", () => {
     });
     locator = new Locator(cardata.position, (result) => {
         let frag = document.createDocumentFragment();
-        result.features.forEach(feature => {
+        const nearFeatures = result.features.filter(f => f.properties.distance < 75000); // 75km max
+        nearFeatures.forEach(feature => {
             let a = document.createElement('a');
             a.addEventListener('click', (event) => {
                 startRoute(feature.geometry.coordinates[0], feature.geometry.coordinates[1]);
@@ -348,12 +391,10 @@ window.addEventListener("load", () => {
             frag.appendChild(a);
         });
 
-        if (result.features.length > 0) {
-            centerMap2d(result.features[0].geometry.coordinates);
+        if (nearFeatures.length > 0) {
+            centerMap2d(nearFeatures[0].geometry.coordinates);
         }
 
-        //document.getElementById('addresses').list.replaceChildren(datalist);
-        //document.getElementById('addresses').replaceChildren(datalist);
         document.getElementById('addresses').replaceChildren(frag);
     });
     tracer = new Tracer(t => {
@@ -369,8 +410,7 @@ window.addEventListener("load", () => {
 
     document.querySelector("button[name='changeViewMapCar3d']").addEventListener("click", event => changeViewMap('car','3d'));
     document.querySelector("button[name='changeViewMapFree2d']").addEventListener("click", event => changeViewMap('free','2d'));
-    document.querySelector("button[name='reload']").addEventListener("click", event => reloadRoute());
-
+    
     if (maplibregl.supported()) {
         initMap();
     } else {

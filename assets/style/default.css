@@ -23,6 +23,14 @@ body:not([data-povanc="free"]) #map {
     mask-image:radial-gradient(circle at 50% 67%, rgba(255,255,255,1), rgba(0,0,0,0)); 
 }
 
+body:not([data-povanc="car"]) .carViewOnly {
+    display: none;
+}
+
+body:not([data-povanc="free"]) .freeViewOnly {
+    display: none;
+}
+
 #commands { 
     position:absolute; 
     bottom:10px; 
@@ -43,6 +51,7 @@ button[name^="changeView"] {
     float:left;
 }
 
+button[name="search"],
 button[name="reload"] {
     float:right;
 }
@@ -54,7 +63,6 @@ button[name="reload"] {
     margin-left:-200px; 
     width:400px; 
     padding:5px; 
-    text-align:center; 
     text-align:center; 
     font-size:40px;
 }
@@ -88,7 +96,6 @@ button[name="reload"] {
     border-radius:35px; 
     display:inline-block; 
     text-align:center; 
-    float:left; 
     overflow:visible; 
     width:60px; 
     height:60px; 
@@ -99,6 +106,15 @@ button[name="reload"] {
 
 #speedLimit:empty { 
     display:none; 
+}
+
+#eta {
+    white-space: nowrap;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    color: #EEE;
+    text-shadow: 0 0 2px #000;
 }
 
 #debug { /* TODO REMOVE */
@@ -158,12 +174,4 @@ input {
     display:block; 
     box-sizing:border-box; 
     width:100%;
-}
-
-body[data-povanc="car"] button[name="changeViewMapCar3d"] {
-    display: none;
-}
-
-body[data-povanc="free"] button[name="changeViewMapFree2d"] {
-    display: none;
 }
