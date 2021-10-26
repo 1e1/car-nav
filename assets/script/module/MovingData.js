@@ -8,7 +8,7 @@ class MovingData {
         this.dvector = {
             heading: 0,
             speed: 0,
-            timestamp: 1,
+            timestamp: 1000,
         },
         this.position = {
             longitude: -1.658711,
@@ -22,17 +22,28 @@ class MovingData {
 
     setVector(heading, speed) {
         const now = Date.now();
-        const dtime = now - this.vector.timestamp;
+        const dtime = this.vector.timestamp==null ? 1000 : now - this.vector.timestamp;
 
         this.dvector = {
-            heading: (heading-this.vector.heading) * 1000/dtime,
             speed: (speed-this.vector.speed) * 1000/dtime, 
             timestamp: dtime,
         };
 
-        this.vector.heading = 0 + heading;
         this.vector.speed = 0 + speed;
         this.vector.timestamp = now;
+
+        if (heading != null) {
+            this.dvector.heading = (heading-this.vector.heading) * 1000/dtime;
+            this.vector.heading = 0 + heading;
+        } else {
+            if (this.dvector.heading == null) {
+                this.dvector.heading = Math.round(Math.random()*36) - 18;
+            }
+
+            if (this.vector.heading == null) {
+                this.vector.heading = Math.round(Math.random()*360);
+            }
+        }
     }
 
     setPosition(longitude, latitude, altitude) {

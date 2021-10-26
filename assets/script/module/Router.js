@@ -7,7 +7,7 @@ class Router {
         this.reset();
         this.xhr.addEventListener('load', (event) => {
             this.route = JSON.parse(this.xhr.responseText);
-            this.checkpointIndex = this.route.routes.length ? 0: -1;
+            this.checkpointIndex = this.route.routes.length ? 0 : -1;
             this.checkpointDistance = Number.MAX_SAFE_INTEGER;
             this.nextCheckpointDistance = Number.MAX_SAFE_INTEGER;
 

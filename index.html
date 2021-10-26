@@ -28,7 +28,7 @@
     <div id="commands">
         <button name="changeViewMapCar3d" class="freeViewOnly">🚗</button><!-- 📍 -->
         <button name="changeViewMapFree2d" class="carViewOnly">🗺</button>
-        <button name="search" onclick="document.getElementById('form').style.display='block';">🏁</button>
+        <button name="search" onclick="document.getElementById('form').style.display='block';var a=document.getElementById('address');a.selectionStart=a.value.length;a.selectionEnd=a.value.length;a.focus();">🏁</button>
     </div>
 
     <div id="form" class="panel" style="display:none">

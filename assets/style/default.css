@@ -159,9 +159,24 @@ button[name="reload"] {
     display:block; 
     text-align:left; 
     text-decoration:none; 
-    margin:0.2em; 
+    margin:0.5em 0; 
+    padding:5px; 
     width:100%; 
     font-size:2em; 
+    border-radius:5px;
+    box-sizing:border-box; 
+    clear: both;
+    background-color: rgba(101, 125, 255,0.8);
+}
+
+#form a:nth-child(2n) {
+    background-color: rgba(120, 101, 255, 0.8);
+}
+
+#form a::after {
+    content: attr(data-city);
+    float: right;
+    margin-left: 1em;
 }
 
 input { 

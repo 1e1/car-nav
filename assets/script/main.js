@@ -65,6 +65,7 @@ function centerMap3d(position, heading, speed) {
 
 function startRoute(longitude, latitude) {
     cardata.setTripDestination(longitude, latitude);
+    router.reset();
     router.set(longitude, latitude);
     router.goto();
     moveDrone([longitude, latitude]);
@@ -75,7 +76,11 @@ function startRoute(longitude, latitude) {
 
 function reloadRoute() {
     router.reset();
-    router.goto();
+    console.log(cardata);
+    if (cardata.destination != null) {
+        router.set(cardata.destination.longitude, cardata.destination.latitude);
+        router.goto();
+    }
 }
 
 function drawRoute(geometry, duration, distance) {
@@ -275,7 +280,7 @@ function animate(timestamp) {
             const markerLngLat = cardata.marker.getLngLat();
 
             if (isNaN(markerLngLat[0] || isNaN(markerLngLat[1]))) {
-                console.warn(cardata.marker, markerLngLat);
+                console.debug(cardata.marker, markerLngLat); // TODO REMOVE
             }
 
             if (now - cardata.position.timestamp < cardata.dvector.timestamp) {
@@ -291,7 +296,7 @@ function animate(timestamp) {
             const angle = is3dMap() ? 0 : vcardata.vector.heading * (180 / Math.PI);
             
             if (isNaN(position2d[0] || isNaN(position2d[1]))) {
-                console.warn(position2d, cardata, vcardata);
+                console.debug(position2d, cardata, vcardata); // TODO REMOVE
             }
 
             cardata.marker
@@ -334,7 +339,7 @@ function animate(timestamp) {
         html_speedLimit.innerHTML = speedLimit;
     }
 
-    const speed = Math.round(cardata.vector.speed);
+    const speed = Math.round(cardata.vector.speed * 3.6);
 
     if (html_speed.innerHTML != speed) {
         html_speed.innerHTML = speed;
@@ -346,7 +351,7 @@ function animate(timestamp) {
 
     const eta = cardata.trip == null 
         ? ''
-        : '⏱' + cardata.getTripEtaInDate().toLocaleTimeString('fr-FR', {
+        : '⏱ ' + cardata.getTripEtaInDate().toLocaleTimeString('fr-FR', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
@@ -381,13 +386,15 @@ window.addEventListener("load", () => {
     });
     locator = new Locator(cardata.position, (result) => {
         let frag = document.createDocumentFragment();
-        const nearFeatures = result.features.filter(f => f.properties.distance < 75000); // 75km max
+        //const nearFeatures = result.features.filter(f => f.properties.distance < 75000); // 75km max
+        const nearFeatures = result.features; // TODO REMOVE
         nearFeatures.forEach(feature => {
             let a = document.createElement('a');
             a.addEventListener('click', (event) => {
                 startRoute(feature.geometry.coordinates[0], feature.geometry.coordinates[1]);
             })
-            a.text = `${feature.properties.name} - ${feature.properties.city}`;
+            a.text = feature.properties.name;
+            a.dataset.city = feature.properties.city;
             frag.appendChild(a);
         });
 
