@@ -71,7 +71,6 @@ function startRoute(longitude, latitude) {
     moveDrone([longitude, latitude]);
 
     changeViewMap("free", "2d");
-    document.getElementById('form').style.display='none';
 }
 
 function reloadRoute() {
@@ -392,6 +391,7 @@ window.addEventListener("load", () => {
             let a = document.createElement('a');
             a.addEventListener('click', (event) => {
                 startRoute(feature.geometry.coordinates[0], feature.geometry.coordinates[1]);
+                document.getElementById('form').style.display='none';
             })
             a.text = feature.properties.name;
             a.dataset.city = feature.properties.city;
@@ -413,10 +413,33 @@ window.addEventListener("load", () => {
     });
 
 
-    html_address.addEventListener('keyup', event => locator.search(event.currentTarget.value));
+    html_address.addEventListener('keyup', (event) => {
+        const text = event.currentTarget.value;
 
-    document.querySelector("button[name='changeViewMapCar3d']").addEventListener("click", event => changeViewMap('car','3d'));
-    document.querySelector("button[name='changeViewMapFree2d']").addEventListener("click", event => changeViewMap('free','2d'));
+        locator.search(text);
+    });
+
+    document.querySelector("#commands button[name='changeViewMapCar3d']").addEventListener("click", event => changeViewMap('car','3d'));
+    document.querySelector("#commands button[name='changeViewMapFree2d']").addEventListener("click", event => changeViewMap('free','2d'));
+    document.querySelector("#commands button[name='search']").addEventListener("click", event => {
+        document.getElementById('form').style.display='block';
+        const html_address = document.getElementById('address');
+        html_address.selectionStart = html_address.value.length;
+        html_address.selectionEnd = html_address.value.length;
+        html_address.focus();
+    });
+
+    document.querySelectorAll("#form button[name='close']").forEach(button => button.addEventListener("click", event => {
+        document.getElementById('form').style.display='none';
+    }));
+    document.querySelector("#form button[name='unroute']").addEventListener("click", event => {
+        undrawRoute();
+        document.getElementById('form').style.display='none';
+    });
+    document.querySelector("#form button[name='search']").addEventListener("click", event => {
+        const html_address = document.getElementById('address');
+        locator.search(html_address.value)
+    });
     
     if (maplibregl.supported()) {
         initMap();
