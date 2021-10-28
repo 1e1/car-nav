@@ -21,7 +21,8 @@ class Locator {
     }
 
     open(text, limit, autocomplete) {
-        this.xhr.open('GET', `https://api-adresse.data.gouv.fr/search/?q=${encodeURI(text)}&lon=${this.position.longitude}&lat=${this.position.latitude}&limit=${limit}&autocomplete=${autocomplete}`, true);
+        //this.xhr.open('GET', `https://api-adresse.data.gouv.fr/search/?q=${encodeURI(text)}&lon=${this.position.longitude}&lat=${this.position.latitude}&limit=${limit}&autocomplete=${autocomplete}`, true);
+        this.xhr.open('GET', `https://demo.addok.xyz/search/?q=${encodeURI(text)}&lon=${this.position.longitude}&lat=${this.position.latitude}&limit=${limit}&autocomplete=${autocomplete}`, true);
     }
 
     search(text) {
@@ -36,7 +37,7 @@ class Locator {
         }
     }
 
-    google(text) {
+    get(text) {
         this.open(text, 1, 0);
         this.xhr.send();
     }
