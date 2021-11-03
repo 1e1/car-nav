@@ -139,15 +139,6 @@ function initMap() {
         minZoom: 10,
     });
 
-    let html_car = document.createElement('div');
-    //html_car.className = 'marker_car';
-    html_car.className = 'marker_arrow';
-
-    cardata.marker = new maplibregl.Marker(html_car)
-        .setLngLat([-1.5115, 48.6345])
-        .addTo(map)
-    ;
-
     map.on('load', () => {
         map.addSource('drone', {
             'type': 'geojson',
@@ -242,6 +233,16 @@ function initMap() {
             },
         });
         */
+
+        {
+            const html_car = document.createElement('div');
+            //html_car.className = 'marker_car';
+            html_car.className = 'marker_arrow';
+
+            cardata.marker = new maplibregl.Marker(html_car);
+            // .setLngLat([-1.5115, 48.6345]).addTo(map);
+        }
+
         changeViewMap("car", "3d");
         document.getElementById('map').style.opacity = 1;
     });
@@ -268,42 +269,58 @@ function moveDrone(position) {
 }
 
 
+function prepareAnimation(timestamp) {
+    const vcardata = cardata.getVirtualClone();
+    const hasCardata = vcardata !== null;
+    const isLoaded = document.getElementById('map').style.opacity == 1 && map.loaded();
+    const hasMarker = cardata.hasOwnProperty('marker') && cardata.marker !== null;
+
+    if (hasCardata && isLoaded && hasMarker) {
+        const position2d = [ vcardata.position.longitude, vcardata.position.latitude ];
+        
+        if (!isNaN(position2d[0]) && !isNaN(position2d[1])) {
+            cardata.marker.setLngLat(position2d).addTo(map);
+
+            window.setTimeout(() => animationId=window.requestAnimationFrame(animate), 6666);
+
+            return;
+        }
+    }
+
+    animationId = window.requestAnimationFrame(prepareAnimation);
+}
+
 function animate(timestamp) {
     const now = Date.now();
     const vcardata = cardata.getVirtualClone();
+    const markerPosition = cardata.marker.getLngLat();
 
-    if (map.loaded() && vcardata!=null) {
-        let position2d = [ vcardata.position.longitude, vcardata.position.latitude ];
+    let position2d = [ vcardata.position.longitude, vcardata.position.latitude ];
 
-        if (cardata.marker) {
-            const markerLngLat = cardata.marker.getLngLat();
+    //console.log("IF", position2d, cardata, vcardata);
 
-            if (isNaN(markerLngLat[0] || isNaN(markerLngLat[1]))) {
-                console.debug(cardata.marker, markerLngLat); // TODO REMOVE
-            }
-
-            if (now - cardata.position.timestamp < cardata.dvector.timestamp) {
-                const ratio = (now - cardata.position.timestamp) / cardata.dvector.timestamp;
-                const markerPosition = cardata.marker.getLngLat();
-
-                const dLng = (vcardata.position.longitude-markerPosition.lng) *ratio;
-                const dLat = (vcardata.position.latitude -markerPosition.lat) *ratio;
-
-                position2d = [ markerPosition.lng+dLng, markerPosition.lat+dLat ];
-            }
-
-            const angle = is3dMap() ? 0 : vcardata.vector.heading * (180 / Math.PI);
+    if (!isNaN(markerPosition[0]) && !isNaN(markerPosition[1])) {
+        if (now - cardata.position.timestamp < cardata.dvector.timestamp) {
+            const ratio = (now - cardata.position.timestamp) / cardata.dvector.timestamp;
             
-            if (isNaN(position2d[0] || isNaN(position2d[1]))) {
-                console.debug(position2d, cardata, vcardata); // TODO REMOVE
-            }
+            const dLng = (vcardata.position.longitude-markerPosition.lng) *ratio;
+            const dLat = (vcardata.position.latitude -markerPosition.lat) *ratio;
 
-            cardata.marker
-                .setLngLat(position2d)
-                .setRotation(angle)
-            ;
+            position2d = [ markerPosition.lng+dLng, markerPosition.lat+dLat ];
         }
+    }
 
+    if (!isNaN(position2d[0]) && !isNaN(position2d[1])) {
+        //console.log("RETURN", position2d, cardata, vcardata);
+        //return;
+
+        const angle = is3dMap() ? 0 : vcardata.vector.heading * (180 / Math.PI);
+        
+        cardata.marker
+            .setLngLat(position2d)
+            .setRotation(angle)
+        ;
+        
         if (!map.isMoving() && !map.isRotating() && isLockedMap()) {
             if (is3dMap()) {
                 map.jumpTo({
@@ -449,5 +466,5 @@ window.addEventListener("load", () => {
 
     tracer.start();
 
-    animationId = window.requestAnimationFrame(animate);
+    animationId = window.requestAnimationFrame(prepareAnimation);
 });

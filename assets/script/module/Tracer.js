@@ -1,3 +1,10 @@
+import { Defaults } from './../Defaults.js';
+
+const CFG = new Defaults('Tracer', {
+    decay: 1.2,
+});
+
+
 class Tracer {
     constructor(callback) {
         this.callback = callback;
@@ -5,7 +12,7 @@ class Tracer {
         this.rawPosition = null;
         this.smoothPosition = null;
 
-        this.decay = 1.2;
+        this.decay = CFG._('decay');
         this.variance = -1;
         this.altitudeVariance = -1;
         this.minAccuracy = 1;

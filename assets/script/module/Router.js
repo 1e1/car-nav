@@ -1,3 +1,10 @@
+import { Defaults } from './../Defaults.js';
+
+const CFG = new Defaults('Router', {
+    url: 'https://router.project-osrm.org/route/v1/driving/${from_lon},${from_lat};${to_lon},${to_lat}.json?geometries=geojson&overview=full',
+});
+
+
 class Router {
     constructor(position, callback) {
         this.longitude = 100;
@@ -83,8 +90,14 @@ class Router {
 
     goto() {
         if (this.longitude <= 90 && this.latitude <= 90) {
+            const url = CFG._('url', {
+                from_lon: this.position.longitude,
+                from_lat: this.position.latitude,
+                to_lon: this.longitude,
+                to_lat: this.latitude,
+            });
             this.xhr.abort();
-            this.xhr.open('GET', `https://router.project-osrm.org/route/v1/driving/${this.position.longitude},${this.position.latitude};${this.longitude},${this.latitude}.json?geometries=geojson&overview=full`, true);
+            this.xhr.open('GET', url, true);
             this.xhr.send();
         }
     };
